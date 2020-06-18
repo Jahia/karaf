@@ -35,17 +35,23 @@
 
     <properties>
         <appendedResourcesDirectory>${basedir}/../../etc/appended-resources</appendedResourcesDirectory>
+        <sourceArtifact.groupId>org.apache.karaf.jaas</sourceArtifact.groupId>
+        <sourceArtifact.artifactId>org.apache.karaf.jaas.config</sourceArtifact.artifactId>
+        <sourceArtifact.version>4.0.7</sourceArtifact.version>
+        <jahia.patch.version>jahia1-SNAPSHOT</jahia.patch.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>org.apache.karaf.jaas</groupId>
             <artifactId>org.apache.karaf.jaas.boot</artifactId>
+            <version>4.0.7</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.karaf</groupId>
             <artifactId>org.apache.karaf.util</artifactId>
+            <version>4.0.7</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -76,47 +82,156 @@
     </dependencies>
 
     <build>
-        <resources>
-            <resource>
-                <directory>${project.basedir}/src/main/resources</directory>
-                <includes>
-                    <include>**/*</include>
-                </includes>
-            </resource>
-            <resource>
-                <directory>${project.basedir}/src/main/resources</directory>
-                <filtering>true</filtering>
-                <includes>
-                    <include>**/*.info</include>
-                </includes>
-            </resource>
-        </resources>
         <plugins>
             <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>2.3.2</version>
                 <configuration>
-                    <instructions>
-                        <Export-Package>
-                            ${project.artifactId};version=${project.version},
-                            ${project.artifactId}.impl;version=${project.version}
-                        </Export-Package>
-                        <Import-Package>
-                            !${project.artifactId}.*,
-                            *
-                        </Import-Package>
-                        <Private-Package>
-                            org.apache.karaf.util.collections
-                        </Private-Package>
-                        <Provide-Capability>
-                            osgi.service;effective:=active;objectClass="org.apache.karaf.jaas.config.KeystoreManager
-                        </Provide-Capability>
-                        <Bundle-Activator>
-                            org.apache.karaf.jaas.config.impl.Activator
-                        </Bundle-Activator>
-                    </instructions>
+                    <source>1.7</source>
+                    <target>1.7</target>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>2.1</version>
+                <executions>
+                    <execution>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>${sourceArtifact.groupId}</groupId>
+                                    <artifactId>${sourceArtifact.artifactId}</artifactId>
+                                    <version>${sourceArtifact.version}</version>
+                                    <type>jar</type>
+                                    <overWrite>false</overWrite>
+                                    <outputDirectory>${project.build.directory}</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>${sourceArtifact.groupId}</groupId>
+                                    <artifactId>${sourceArtifact.artifactId}</artifactId>
+                                    <version>${sourceArtifact.version}</version>
+                                    <type>jar</type>
+                                    <classifier>sources</classifier>
+                                    <overWrite>false</overWrite>
+                                    <outputDirectory>${project.build.directory}</outputDirectory>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.6</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <configuration>
+                            <tasks>
+                                <copy file="${project.build.directory}/${sourceArtifact.artifactId}-${sourceArtifact.version}.jar"
+                                    tofile="${project.build.directory}/${sourceArtifact.artifactId}-${sourceArtifact.version}-${jahia.patch.version}.jar"
+                                    overwrite="true" />
+                                <jar destfile="${project.build.directory}/${sourceArtifact.artifactId}-${sourceArtifact.version}-${jahia.patch.version}.jar"
+                                    update="true" basedir="${project.build.directory}/classes" manifest="${project.build.directory}/classes/META-INF/MANIFEST.MF"/>
+                                    
+                                <copy file="${project.build.directory}/${sourceArtifact.artifactId}-${sourceArtifact.version}-sources.jar"
+                                    tofile="${project.build.directory}/${sourceArtifact.artifactId}-${sourceArtifact.version}-${jahia.patch.version}-sources.jar"
+                                    overwrite="true" />
+                                <jar destfile="${project.build.directory}/${sourceArtifact.artifactId}-${sourceArtifact.version}-${jahia.patch.version}-sources.jar"
+                                    update="true" basedir="${basedir}/src/main/java"/>
+                            </tasks>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-install-plugin</artifactId>
+                <version>2.3.1</version>
+                <executions>
+                    <execution>
+                        <phase>install</phase>
+                        <configuration>
+                            <file>${project.build.directory}/${sourceArtifact.artifactId}-${sourceArtifact.version}-${jahia.patch.version}.jar</file>
+                            <pomFile>${project.build.directory}/classes/META-INF/maven/${sourceArtifact.groupId}/${sourceArtifact.artifactId}/pom.xml</pomFile>
+                            <sources>${project.build.directory}/${sourceArtifact.artifactId}-${sourceArtifact.version}-${jahia.patch.version}-sources.jar</sources>
+                            <packaging>jar</packaging>
+                        </configuration>
+                        <goals>
+                            <goal>install-file</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
+    
+    <profiles>
+        <profile>
+            <id>deploy-artifacts-releases</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-deploy-plugin</artifactId>
+                        <version>2.7</version>
+                        <executions>
+                            <execution>
+                                <phase>install</phase>
+                                <configuration>
+                                    <url>https://devtools.jahia.com/nexus/content/repositories/thirdparty-releases</url>
+                                    <repositoryId>thirdparty-releases</repositoryId>
+                                    <file>${project.build.directory}/${sourceArtifact.artifactId}-${sourceArtifact.version}-${jahia.patch.version}.jar</file>
+                                    <pomFile>${project.build.directory}/classes/META-INF/maven/${sourceArtifact.groupId}/${sourceArtifact.artifactId}/pom.xml</pomFile>
+                                    <sources>${project.build.directory}/${sourceArtifact.artifactId}-${sourceArtifact.version}-${jahia.patch.version}-sources.jar</sources>
+                                    <packaging>jar</packaging>
+                                </configuration>
+                                <goals>
+                                    <goal>deploy-file</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>deploy-artifacts-snapshots</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-deploy-plugin</artifactId>
+                        <version>2.7</version>
+                        <executions>
+                            <execution>
+                                <phase>install</phase>
+                                <configuration>
+                                    <url>https://devtools.jahia.com/nexus/content/repositories/thirdparty-snapshots</url>
+                                    <repositoryId>thirdparty-snapshots</repositoryId>
+                                    <file>${project.build.directory}/${sourceArtifact.artifactId}-${sourceArtifact.version}-${jahia.patch.version}.jar</file>
+                                    <pomFile>${project.build.directory}/classes/META-INF/maven/${sourceArtifact.groupId}/${sourceArtifact.artifactId}/pom.xml</pomFile>
+                                    <sources>${project.build.directory}/${sourceArtifact.artifactId}-${sourceArtifact.version}-${jahia.patch.version}-sources.jar</sources>
+                                    <packaging>jar</packaging>
+                                </configuration>
+                                <goals>
+                                    <goal>deploy-file</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
