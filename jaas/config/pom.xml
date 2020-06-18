@@ -28,7 +28,7 @@
     <artifactId>org.apache.karaf.jaas.config</artifactId>
     <packaging>bundle</packaging>
     <name>Apache Karaf :: JAAS :: Config</name>
-    <version>4.0.7-jahia1</version>
+    <version>4.0.7-jahia2-SNAPSHOT</version>
     <description>This bundle provides the configuration facility for the JAAS security framework.</description>
 
     <properties>
